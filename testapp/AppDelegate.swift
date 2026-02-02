@@ -6,14 +6,35 @@
 //
 
 import UIKit
+import ActivityKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
+    private var activityObservationTask: Task<Void, Never>?
+    private var tokenObservationTasks: [String: Task<Void, Never>] = [:]
+    private var cachedTokens: [String: String] = [:]
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        activityObservationTask = Task {
+            for await activity in Activity<LiveActivityAttributes>.activityUpdates {
+                guard activity.activityState == .active else { continue }
+                tokenObservationTasks[activity.id] = Task {
+                    for await pushToken in activity.pushTokenUpdates {
+                        let tokenString = pushToken.reduce("") {
+                            $0 + String(format: "%02x", $1)
+                        }
+                        print("PUSH ATTRIBUTES: \(activity.attributes)")
+                        print("PUSH TOKEN: \(tokenString)")
+                        
+                        cachedTokens[activity.id] = tokenString
+                    }
+                }
+            }
+        }
+        
         return true
     }
 

@@ -8,11 +8,17 @@
 import ActivityKit
 import WidgetKit
 import SwiftUI
+import AppIntents
+
+struct Item: Codable, Hashable {
+    var emoji: String
+}
 
 struct LiveActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         // Dynamic stateful properties about your activity go here!
-        var emoji: String
+        var pageIndex: Int?
+        var items: [Item]
     }
 
     // Fixed non-changing properties about your activity go here!
@@ -20,35 +26,83 @@ struct LiveActivityAttributes: ActivityAttributes {
 }
 
 struct LiveActivityLiveActivity: Widget {
+    
+    func currentItem(from state: LiveActivityAttributes.ContentState) -> Item {
+        guard let pageIndex = state.pageIndex, pageIndex < state.items.count else {
+            return state.items[0]
+        }
+        return state.items[pageIndex]
+    }
+    
+    func hasPrevLegs(_ state: LiveActivityAttributes.ContentState) -> Bool {
+        let pageIndex = state.pageIndex ?? 0
+        return pageIndex > 0
+    }
+    
+    func hasNextLegs(_ state: LiveActivityAttributes.ContentState) -> Bool {
+        let pageIndex = state.pageIndex ?? 0
+        return pageIndex < (state.items.count - 1)
+    }
+    
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LiveActivityAttributes.self) { context in
+            let currentItem = currentItem(from: context.state)
             // Lock screen/banner UI goes here
-            VStack {
-                Text("Hello \(context.state.emoji)")
+            HStack {
+                Button(intent: ButtonChangeIntent(activityId: context.activityID, forward: false)) {
+                    Image(systemName: "chevron.left")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+                        .aspectRatio(contentMode: .fit)
+                        .background(.clear)
+                }
+                
+                Text("Hello \(currentItem.emoji)")
+                
+                Button(intent: ButtonChangeIntent(activityId: context.activityID, forward: true)) {
+                    Image(systemName: "chevron.right")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+                        .aspectRatio(contentMode: .fit)
+                        .background(.clear)
+                }
             }
             .activityBackgroundTint(Color.cyan)
             .activitySystemActionForegroundColor(Color.black)
 
         } dynamicIsland: { context in
-            DynamicIsland {
+            let currentItem = currentItem(from: context.state)
+            return DynamicIsland {
                 // Expanded UI goes here.  Compose the expanded UI through
                 // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("Leading")
+                    Button(intent: ButtonChangeIntent(activityId: context.activityID, forward: false)) {
+                        Image(systemName: "chevron.left")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .aspectRatio(contentMode: .fit)
+                            .background(.clear)
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    Button(intent: ButtonChangeIntent(activityId: context.activityID, forward: true)) {
+                        Image(systemName: "chevron.right")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .aspectRatio(contentMode: .fit)
+                            .background(.clear)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom \(context.state.emoji)")
+                    Text("Bottom \(currentItem.emoji)")
                     // more content
                 }
             } compactLeading: {
                 Text("L")
             } compactTrailing: {
-                Text("T \(context.state.emoji)")
+                Text("T \(currentItem.emoji)")
             } minimal: {
-                Text(context.state.emoji)
+                Text(currentItem.emoji)
             }
             .widgetURL(URL(string: "http://www.apple.com"))
             .keylineTint(Color.red)
@@ -64,11 +118,11 @@ extension LiveActivityAttributes {
 
 extension LiveActivityAttributes.ContentState {
     fileprivate static var smiley: LiveActivityAttributes.ContentState {
-        LiveActivityAttributes.ContentState(emoji: "😀")
+        LiveActivityAttributes.ContentState(items: [Item(emoji: "🤩")])
      }
      
      fileprivate static var starEyes: LiveActivityAttributes.ContentState {
-         LiveActivityAttributes.ContentState(emoji: "🤩")
+         LiveActivityAttributes.ContentState(items: [Item(emoji: "🤩")])
      }
 }
 
