@@ -6,7 +6,7 @@
 2. Run the app
 3. Request push token and copy
 4. Use APNS console to send a live activity push type with the following payload:
-   ```json
+```json
 {
     "aps": {
         "attributes": {
@@ -34,7 +34,7 @@
         }
     }
 }
-   ```
+```
 5. Ensure button on the live activity cycle the emoji
 6. Be sure to allow live activities from the lock screen and find "PUSH TOKEN" in Xcode log
 7. Use the push token to send a live activity push type in the console with this payload:
